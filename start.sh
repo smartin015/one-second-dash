@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # The WiFi SSID that your Dash will try to connect to 
-SSID_NAME='Free Public WiFi'
+SSID_NAME='Butts'
 
 # The channel of that SSID that Dash will try to connect to
 # You can either choose this at network creation time,
@@ -10,7 +10,7 @@ CHANNEL=6
 
 # The capability field of your WiFi dongle
 # You can determine this via `iw phy`
-CAP_FIELD="Capabilities: 0x172"
+CAP_FIELD="Capabilities: 0x17e"
 
 # cd to directory containing this script
 cd $(dirname $(readlink -f $0))
@@ -21,5 +21,5 @@ cd $(dirname $(readlink -f $0))
 # The break allows us to control-C out of this loop.
 while true; do
   sudo ./setup_monitor_interface.sh "$CHANNEL" "$CAP_FIELD" 2>&1
-  sudo ./doorbell.py "$SSID_NAME" 2>&1 || break
+  sudo ./listen.py "$SSID_NAME" 2>&1 || break
 done

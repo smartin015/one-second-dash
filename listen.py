@@ -4,13 +4,13 @@ import signal
 import subprocess
 import sys
 import time
+import paho.mqtt.client as mqtt
+
+mqttc = mqtt.Client()
 
 # Ignore SIGCHLD
 # This will prevent zombies
 signal.signal(signal.SIGCHLD, signal.SIG_IGN)
-
-# After ringing, how many seconds before we allow ourselves to ring again
-DEBOUNCE_INTERVAL = 7
 
 # The token to look for in tcpdump's output
 # This should be your unique network SSID
@@ -30,21 +30,19 @@ for line in lines:
 print "Number of tokens in list:"
 print len(SSID_TOKENS)
 
+
+times = {}
 print "SSID_TOKENS is/are:"
 for SSID_TOKEN_PRINT in SSID_TOKENS:
     print SSID_TOKEN_PRINT
+    times[SSID_TOKEN_PRINT] = time.time()
     
-DEVNULL = open(os.devnull, 'wb')
-def do_ring():
-    """ Play the doorbell.wav file. Don't wait for it to finish. """
-    cmd = 'alsaplayer -o alsa --quiet ./doorbell.wav'
-    soundproc = subprocess.Popen(cmd.split(), close_fds=True,
-                                 stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL)
-
-cmd = 'tcpdump -l -K -q -i DoorbellMonitor -n -s 256'
+cmd = 'tcpdump -l -K -q -i Butts -n -s 256'
 proc = subprocess.Popen(cmd.split(), close_fds=True,
                         bufsize=0, stdout=subprocess.PIPE)
-last_played = 0
+
+mqttc.connect("192.168.1.3")
+mqttc.loop_start()
 
 while True:
     line = proc.stdout.readline()
@@ -53,9 +51,8 @@ while True:
         break
     for SSID_TOKEN in SSID_TOKENS:
         if SSID_TOKEN in line:
-            now = time.time()
-            if now - last_played > DEBOUNCE_INTERVAL:
-                last_played = now
-                sys.stdout.write(line)
-                sys.stdout.flush()
-                do_ring()
+            sys.stdout.write(line)
+            sys.stdout.flush()
+            if time.time() - times[SSID_TOKEN] > 1.0:
+       	        mqttc.publish("/dash/" + SSID_TOKEN, "pressed")
+                times[SSID_TOKEN] = time.time()
